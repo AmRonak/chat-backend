@@ -1,7 +1,7 @@
-import express, { Express } from "express";
-import { config } from "./config";
-import databaseConnection from "./setupDatabase";
-import { MainServer } from "./setupServer";
+import express, { Express } from 'express';
+import { config } from '@root/config';
+import databaseConnection from '@root/setupDatabase';
+import { MainServer } from '@root/setupServer';
 
 class Application {
   public start(): void {
@@ -13,7 +13,7 @@ class Application {
   }
 
   private loadConfig(): void {
-    config.validationConfig()
+    config.validationConfig();
   }
 }
 

@@ -12,7 +12,7 @@ class Config {
   public CLIENT_URL: string | undefined;
   public REDIS_HOST: string | undefined;
 
-  private readonly DEFAULT_DATABASE_URL = 'mongodb://127.0.0.1/chattyapp-backend'
+  private readonly DEFAULT_DATABASE_URL = 'mongodb://127.0.0.1/chattyapp-backend';
 
   constructor() {
     this.DATABASE_URL = process.env.DATABASE_URL || this.DEFAULT_DATABASE_URL;
@@ -31,7 +31,7 @@ class Config {
   public validationConfig (): void {
     for(const[key, value] of Object.entries(this)) {
       if(value === undefined) {
-        throw new Error(`Configuration ${key} is undefined.`)
+        throw new Error(`Configuration ${key} is undefined.`);
       }
     }
   }
