@@ -21,6 +21,7 @@ import type Logger from 'bunyan';
 import {config} from '@root/config';
 import applicationRoutes from '@root/routes';
 import {CustomError, type ErrorInterface} from '@global/helpers/error-handler';
+
 const log: Logger = config.createLogger('server');
 
 export class MainServer {
@@ -108,7 +109,7 @@ export class MainServer {
 	private startHttpServer(httpServer: http.Server): void {
 		log.info(`Server has started with process ${process.pid}`);
 		httpServer.listen(config.SERVER_PORT, () => {
-			log.info(`Server is running on ${config.SERVER_PORT!}`);
+			log.info(`Server is running on ${config.SERVER_PORT}`);
 		});
 	}
 
