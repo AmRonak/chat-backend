@@ -1,4 +1,5 @@
 /* eslint-disable new-cap */
+import {Password} from '@auth/controllers/password';
 import {SignIn} from '@auth/controllers/signin.controller';
 import {SignOut} from '@auth/controllers/signout.controller';
 import {Signup} from '@auth/controllers/signup.controller';
@@ -14,6 +15,8 @@ class AuthRoutes {
 	public routes(): Router {
 		this.router.post('/signup', Signup.prototype.create);
 		this.router.post('/signin', SignIn.prototype.read);
+		this.router.post('/forgot-password', Password.prototype.create);
+		this.router.post('/reset-password/:token', Password.prototype.update);
 		return this.router;
 	}
 

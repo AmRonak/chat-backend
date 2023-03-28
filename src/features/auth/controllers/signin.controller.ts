@@ -10,7 +10,11 @@ import {Request, Response} from 'express';
 import JWT from 'jsonwebtoken';
 import HTTP_STATUS from 'http-status-codes';
 import {userService} from '@service/db/user.service.db';
-import {type UserDocumentInterface} from '@user/interfaces/user.interface';
+import {type ResetPasswordParamsInterface, type UserDocumentInterface} from '@user/interfaces/user.interface';
+import {emailQueue} from '@service/queues/email.queue';
+import publicIp from 'ip';
+import moment from 'moment';
+import {resetPasswordTemplate} from '@service/emails/templates/reset-password/reset-password';
 
 export class SignIn {
 	@joiValidation(loginSchema)
@@ -34,6 +38,21 @@ export class SignIn {
 			username: checkIfUserExist.username,
 			avatarColor: checkIfUserExist.avatarColor,
 		}, config.JWT_TOKEN!);
+
+		const templateParams: ResetPasswordParamsInterface = {
+			username: checkIfUserExist.username,
+			email: checkIfUserExist.email,
+			ipaddress: publicIp.address(),
+			date: moment().format('DD/MM/YYYY HH:mm'),
+		};
+		const template: string = resetPasswordTemplate.passwordResetConfimationTemplate(templateParams);
+		// Const resetLink = `${config.CLIENT_URL!}/reset-password?token=1234567`;
+		// const template: string = forgotPasswordTemplate.passwordResetTemplate(checkIfUserExist.username, resetLink);
+		emailQueue.addEmailJob('forgotPasswordEmail', {
+			template,
+			receiverEmail: config.SENDER_EMAIL!,
+			subject: 'Password Reset confirmation',
+		});
 
 		req.session = {jwt: userJwt};
 		const userDocument: UserDocumentInterface = {

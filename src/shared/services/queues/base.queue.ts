@@ -3,9 +3,11 @@ import type Logger from 'bunyan';
 import {createBullBoard, BullAdapter, ExpressAdapter} from '@bull-board/express';
 import {config} from '@root/config';
 import {type AuthJobInterface} from '@auth/interfaces/auth.interface';
+import {type EmailJobInterface} from '@user/interfaces/user.interface';
 
 type BaseJobQueue =
-  | AuthJobInterface;
+  | AuthJobInterface
+  | EmailJobInterface;
 
 let bullAdapter: BullAdapter[] = [];
 
