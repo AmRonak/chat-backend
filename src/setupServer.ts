@@ -1,117 +1,119 @@
-import {
-	type Application,
-	json,
-	urlencoded,
-	type Response,
-	type Request,
-	type NextFunction,
-} from 'express';
+import { Application, json, urlencoded, Response, Request, NextFunction } from 'express';
 import http from 'http';
 import cors from 'cors';
-import hpp from 'hpp';
-import cookieSession from 'cookie-session';
 import helmet from 'helmet';
-import HTTP_STATUS from 'http-status-codes';
+import hpp from 'hpp';
 import compression from 'compression';
+import cookieSession from 'cookie-session';
+import HTTP_STATUS from 'http-status-codes';
+import { Server } from 'socket.io';
+import { createClient } from 'redis';
+import { createAdapter } from '@socket.io/redis-adapter';
+import Logger from 'bunyan';
 import 'express-async-errors';
-import {Server} from 'socket.io';
-import {createClient} from 'redis';
-import {createAdapter} from '@socket.io/redis-adapter';
-import type Logger from 'bunyan';
-import {config} from '@root/config';
+import { config } from '@root/config';
 import applicationRoutes from '@root/routes';
-import {CustomError, type ErrorInterface} from '@global/helpers/error-handler';
+import { CustomError, IErrorResponse } from '@global/helpers/error-handler';
+import { SocketIOPostHandler } from '@socket/post';
 
+const SERVER_PORT = 5000;
 const log: Logger = config.createLogger('server');
 
-export class MainServer {
-	constructor(private readonly app: Application) {
-		this.app = app;
-	}
+export class ChattyServer {
+  private app: Application;
 
-	public start(): void {
-		this.securityMiddleware(this.app);
-		this.standardMiddleware(this.app);
-		this.routesMiddleware(this.app);
-		this.globalErrorHandler(this.app);
-		void this.startServer(this.app);
-	}
+  constructor(app: Application) {
+    this.app = app;
+  }
 
-	private securityMiddleware(app: Application): void {
-		app.use(
-			cookieSession({
-				name: 'server-session',
-				keys: [config.SECRET_KEY_ONE!, config.SECRET_KEY_TWO!],
-				maxAge: 24 * 7 * 3600000,
-				secure: config.NODE_ENV !== 'development',
-			}),
-		);
-		app.use(hpp());
-		app.use(helmet());
-		app.use(
-			cors({
-				origin: config.CLIENT_URL,
-				credentials: true,
-				optionsSuccessStatus: 200,
-				methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-			}),
-		);
-	}
+  public start(): void {
+    this.securityMiddleware(this.app);
+    this.standardMiddleware(this.app);
+    this.routesMiddleware(this.app);
+    this.globalErrorHandler(this.app);
+    this.startServer(this.app);
+  }
 
-	private standardMiddleware(app: Application): void {
-		app.use(compression());
-		app.use(json({limit: '50mb'}));
-		app.use(urlencoded({extended: true, limit: '50mb'}));
-	}
+  private securityMiddleware(app: Application): void {
+    app.use(
+      cookieSession({
+        name: 'session',
+        keys: [config.SECRET_KEY_ONE!, config.SECRET_KEY_TWO!],
+        maxAge: 24 * 7 * 3600000,
+        secure: config.NODE_ENV !== 'development'
+      })
+    );
+    app.use(hpp());
+    app.use(helmet());
+    app.use(
+      cors({
+        origin: config.CLIENT_URL,
+        credentials: true,
+        optionsSuccessStatus: 200,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+      })
+    );
+  }
 
-	private routesMiddleware(app: Application): void {
-		applicationRoutes(app);
-	}
+  private standardMiddleware(app: Application): void {
+    app.use(compression());
+    app.use(json({ limit: '50mb' }));
+    app.use(urlencoded({ extended: true, limit: '50mb' }));
+  }
 
-	private globalErrorHandler(app: Application): void {
-		app.all('*', async (req: Request, res: Response) => {
-			res.status(HTTP_STATUS.NOT_FOUND).json({message: `${req.originalUrl} not found`});
-		});
+  private routesMiddleware(app: Application): void {
+    applicationRoutes(app);
+  }
 
-		app.use((error: ErrorInterface, _req: Request, res: Response, next: NextFunction) => {
-			log.error(error);
-			if (error instanceof CustomError) {
-				return res.status(error.statusCode).json(error.serializeErrors());
-			}
-		});
-	}
+  private globalErrorHandler(app: Application): void {
+    app.all('*', (req: Request, res: Response) => {
+      res.status(HTTP_STATUS.NOT_FOUND).json({ message: `${req.originalUrl} not found` });
+    });
 
-	private async startServer(app: Application): Promise<void> {
-		try {
-			const httpServer: http.Server = new http.Server(app);
-			const socketIo: Server = await this.createSocketIo(httpServer);
-			this.startHttpServer(httpServer);
-			this.socketIoConnections(socketIo);
-		} catch (error) {
-			log.error({error});
-		}
-	}
+    app.use((error: IErrorResponse, _req: Request, res: Response, next: NextFunction) => {
+      log.error(error);
+      if (error instanceof CustomError) {
+        return res.status(error.statusCode).json(error.serializeErrors());
+      }
+      next();
+    });
+  }
 
-	private async createSocketIo(httpServer: http.Server): Promise<Server> {
-		const io: Server = new Server(httpServer, {
-			cors: {
-				origin: config.CLIENT_URL,
-				methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-			},
-		});
-		const publishClient = createClient({url: config.REDIS_HOST});
-		const subscriptionClient = publishClient.duplicate();
-		await Promise.all([publishClient.connect(), subscriptionClient.connect()]);
-		io.adapter(createAdapter(publishClient, subscriptionClient));
-		return io;
-	}
+  private async startServer(app: Application): Promise<void> {
+    try {
+      const httpServer: http.Server = new http.Server(app);
+      const socketIO: Server = await this.createSocketIO(httpServer);
+      this.startHttpServer(httpServer);
+      this.socketIOConnections(socketIO);
+    } catch (error) {
+      log.error(error);
+    }
+  }
 
-	private startHttpServer(httpServer: http.Server): void {
-		log.info(`Server has started with process ${process.pid}`);
-		httpServer.listen(config.SERVER_PORT, () => {
-			log.info(`Server is running on ${config.SERVER_PORT}`);
-		});
-	}
+  private async createSocketIO(httpServer: http.Server): Promise<Server> {
+    const io: Server = new Server(httpServer, {
+      cors: {
+        origin: config.CLIENT_URL,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+      }
+    });
+    const pubClient = createClient({ url: config.REDIS_HOST });
+    const subClient = pubClient.duplicate();
+    await Promise.all([pubClient.connect(), subClient.connect()]);
+    io.adapter(createAdapter(pubClient, subClient));
+    return io;
+  }
 
-	private socketIoConnections(io: Server): void {}
+  private startHttpServer(httpServer: http.Server): void {
+    log.info(`Server has started with process ${process.pid}`);
+    httpServer.listen(SERVER_PORT, () => {
+      log.info(`Server running on port ${SERVER_PORT}`);
+    });
+  }
+
+  private socketIOConnections(io: Server): void {
+    const postSocketHandler: SocketIOPostHandler = new SocketIOPostHandler(io);
+
+    postSocketHandler.listen();
+  }
 }
