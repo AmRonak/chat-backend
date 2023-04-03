@@ -1,96 +1,87 @@
-import {type Document} from 'mongoose';
-import type mongoose from 'mongoose';
-import {type ObjectId} from 'mongodb';
+import mongoose, { Document } from 'mongoose';
+import { ObjectId } from 'mongodb';
 
-export type UserDocumentInterface = {
-	_id: string | ObjectId;
-	authId: string | ObjectId;
-	username?: string;
-	email?: string;
-	password?: string;
-	avatarColor?: string;
-	uId?: string;
-	postsCount: number;
-	work: string;
-	school: string;
-	quote: string;
-	location: string;
-	blocked: mongoose.Types.ObjectId[];
-	blockedBy: mongoose.Types.ObjectId[];
-	followersCount: number;
-	followingCount: number;
-	notifications: NotificationSettingsInterface;
-	social: SocialLinksInterface;
-	bgImageVersion: string;
-	bgImageId: string;
-	profilePicture: string;
-	createdAt?: Date;
-} & Document;
+export interface IUserDocument extends Document {
+  _id: string | ObjectId;
+  authId: string | ObjectId;
+  username?: string;
+  email?: string;
+  password?: string;
+  avatarColor?: string;
+  uId?: string;
+  postsCount: number;
+  work: string;
+  school: string;
+  quote: string;
+  location: string;
+  blocked: mongoose.Types.ObjectId[];
+  blockedBy: mongoose.Types.ObjectId[];
+  followersCount: number;
+  followingCount: number;
+  notifications: INotificationSettings;
+  social: ISocialLinks;
+  bgImageVersion: string;
+  bgImageId: string;
+  profilePicture: string;
+  createdAt?: Date;
+}
 
-export type ResetPasswordParamsInterface = {
-	username: string;
-	email: string;
-	ipaddress: string;
-	date: string;
-};
+export interface IResetPasswordParams {
+  username: string;
+  email: string;
+  ipaddress: string;
+  date: string;
+}
 
-export type NotificationSettingsInterface = {
-	messages: boolean;
-	reactions: boolean;
-	comments: boolean;
-	follows: boolean;
-};
+export interface INotificationSettings {
+  messages: boolean;
+  reactions: boolean;
+  comments: boolean;
+  follows: boolean;
+}
 
-export type BasicInfoInterface = {
-	quote: string;
-	work: string;
-	school: string;
-	location: string;
-};
+export interface IBasicInfo {
+  quote: string;
+  work: string;
+  school: string;
+  location: string;
+}
 
-export type SocialLinksInterface = {
-	facebook: string;
-	instagram: string;
-	twitter: string;
-	youtube: string;
-};
+export interface ISocialLinks {
+  facebook: string;
+  instagram: string;
+  twitter: string;
+  youtube: string;
+}
 
-export type SearchUserInterface = {
-	_id: string;
-	profilePicture: string;
-	username: string;
-	email: string;
-	avatarColor: string;
-};
+export interface ISocketData {
+  blockedUser: string;
+  blockedBy: string;
+}
 
-export type SocketDataInterface = {
-	blockedUser: string;
-	blockedBy: string;
-};
+export interface ILogin {
+  userId: string;
+}
 
-export type LoginInterface = {
-	userId: string;
-};
+export interface IUserJobInfo {
+  key?: string;
+  value?: string | ISocialLinks;
+}
 
-export type UserJobInfoInterface = {
-	key?: string;
-	value?: string | SocialLinksInterface;
-};
+export interface IUserJob {
+  keyOne?: string;
+  keyTwo?: string;
+  key?: string;
+  value?: string | INotificationSettings | IUserDocument;
+}
 
-export type UserJobInterface = {
-	keyOne?: string;
-	keyTwo?: string;
-	key?: string;
-	value?: string | NotificationSettingsInterface | UserDocumentInterface;
-};
+export interface IEmailJob {
+  receiverEmail: string;
+  template: string;
+  subject: string;
+}
 
-export type EmailJobInterface = {
-	receiverEmail: string;
-	template: string;
-	subject: string;
-};
-
-export type AllUsersInterface = {
-	users: UserDocumentInterface[];
-	totalUsers: number;
-};
+export interface IAllUsers {
+  users: IUserDocument[];
+  totalUsers: number;
+}
