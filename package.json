@@ -12,7 +12,7 @@
     "prettier:check": "prettier --check src/**/*.{ts,json}",
     "prettier:fix": "prettier --write src/**/*.{ts,json}",
     "test": "jest --coverage=true -w=1 --forceExit --detectOpenHandles --watchAll=true",
-    "build": "ttsc -p . && mkdir -p build/public && cp -R src/public build/",
+    "build": "ttsc -p .",
     "seed:dev": "npx ts-node src/seeds.ts",
     "seed:prod": "npx ts-node build/src/seeds.js"
   },
